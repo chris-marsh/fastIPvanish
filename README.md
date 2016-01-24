@@ -15,8 +15,8 @@ OPTIONS
     -W    - write a vpn config to file
     -Wr   - write a vpn config file and start/restart openvpn
     -d    - output a vpn config
-    -t    - specify a template file, default is ./vpn_template.tmpl
-    -c    - specify an output config file, default is ./vpn_config.ovpn
+    -t    - specify a template file, default is ./templates/default.tmpl
+    -c    - specify an output config file, default is ./config.ovpn
     -h    - outputs this message
 
 EXAMPLES
