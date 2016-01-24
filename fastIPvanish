@@ -30,8 +30,8 @@ usage() {
 
 # Initialize the options
 filter=''
-vpn_template='./vpn_template.tmpl'
-vpn_config='./vpn_config.ovpn'
+vpn_template='./templates/default`.tmpl'
+vpn_config='./config.ovpn'
 config_to_file=false
 config_to_output=false
 restart_openvpn=false
