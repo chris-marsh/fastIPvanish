@@ -1,4 +1,4 @@
-fastIPvanish
+#fastIPvanish
 
 USAGE
 
@@ -57,5 +57,3 @@ EXAMPLES
     cipher AES-256-CBC
     keysize 256
     tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA
-
-
