@@ -1,25 +1,57 @@
 #!/bin/bash
 
-if [ "$EUID" -ne 0 ] ; then
-    echo "fastIPvanish is NOT being run with root privileges."
-    echo "sudo is required to start and stop openvpn connections."
-    echo "fastIPvanish script can still find the fastest server and update the"
-    echo "config file."
-    read -r -p "Do you wish to continue? [Y/n] " response
-    case $response in
-        [oO]|[nN])
-            exit 1
-            break
-            ;;
-    esac
-fi
+usage() {
+	echo 'USAGE'
+	echo '    fastIPvanish [-d] [-W] [-Wr] filter'
+	echo
+	echo 'DESCRIPTION'
+	echo '    fastIPvanish will ping the servers of IPVanish, returning the times'
+	echo '    and shows the fastest responding server. Optionally, a config file'
+	echo '    can be written to file and used to start an openvpn session.'
+	echo
+	echo 'OPTIONS'
+	echo '    -W    - write a vpn config to file'
+	echo '    -Wr   - write a vpn config file and start/restart openvpn'
+	echo '    -d    - output a vpn config'
+	echo '    -t    - specify a template file, default is ./vpn_template.tmpl'
+	echo '    -c    - specify an output config file, default is ./vpn_config.ovpn'
+	echo '    -h    - outputs this message'
+	echo
+	echo 'EXAMPLES'
+	echo '    fastIPvanish -Wr -d London'
+	echo '    fastIPvanish -d US'
+	echo '    fastIPvanish -Wr New-York'
+	echo '    fastIPvanish -W Amsterdam'
+	exit
+}
 
-# Enforce an argument to use for filtering the servers
-if [ -z "$1" ] ; then
-    echo "Please provide a location filter."
-    echo "... eg $ fastIPvanish London"
-    echo "... eg $ fastIPvanish US"
-    exit 1
+# Argument parsing
+[[ $1 ]] || usage
+
+# Initialize the options
+filter=''
+vpn_template='./vpn_template.tmpl'
+vpn_config='./vpn_config.ovpn'
+config_to_file=false
+config_to_output=false
+restart_openvpn=false
+
+while [[ $1 ]]; do
+	case "$1" in
+		'-W') config_to_file=true ;;
+		'-Wr') config_to_file=true ; restart_openvpn=true ;;
+		'-d') config_to_output=true ;;
+		'-t') vpn_template=$2 ; shift ;;
+		'-c') vpn_config=$2 ; shift ;;
+		'-h'|'--help') usage ;;
+		-*) echo "fastIPvanish: Option \`$1' is not valid." ; exit 5 ;;
+		*) filter=$1 ;;
+	esac
+	shift
+done
+
+if [ "$filter" = "" ] ; then
+	usage;
 fi
 
 # Initialize the variables
@@ -29,66 +61,54 @@ best_server_url=""
 # Start reading the server file one line at a time
 while IFS='' read -r line || [[ -n "$line" ]] ; do
 
-    # Check the cli argument is a substring of the line
-    if ! [ "${line/$1}" = "$line" ] ; then
+	# Check the cli argument is a substring of the line
+	if ! [ "${line/$filter}" = "$line" ] ; then
 
-        # Create the server_url url from the line
-        server_url=$(echo $line | awk -F'-' '{print $(NF-1) "-" $NF ".ipvanish.com"}')
+		# Create the server_url url from the line
+		server_url=$(echo $line | awk -F'-' '{print $(NF-1) "-" $NF ".ipvanish.com"}')
 
-        # Make a short ping and from the output, save the millisecond time
-        echo -n "Pinging $server_url ... "
-        time_str=$(ping -c 1 -q -s 16 -w 1 -W 1 $server_url | grep avg | awk -F'/' '{print $5}')
+		# Make a short ping and from the output, save the millisecond time
+		echo -n "Pinging $server_url ... "
+		time_str=$(ping -c 1 -q -s 16 -w 1 -W 1 $server_url | grep avg | awk -F'/' '{print $5}')
 
-        # Only the whole number part is needed, truncate at the decimal point
-        time=${time_str/.*/}
+		# Only the whole number part is needed, truncate at the decimal point
+		time=${time_str/.*/}
 
-        if [[ $time =~ ^-?[0-9]+$ ]] ; then
-            echo $time_str
-            # If the time is quicker than previous pings, store the server_url & time
-            if [ "$time" -lt "$best_time" ] ; then
-                best_server_url=$server_url
-                best_time=$time
-            fi
-        else
-            echo 'Error'
-        fi
+		if [[ $time =~ ^-?[0-9]+$ ]] ; then
+			echo $time_str
+			# If the time is quicker than previous pings, store the server_url & time
+			if [ "$time" -lt "$best_time" ] ; then
+				best_server_url=$server_url
+				best_time=$time
+			fi
+		else
+			echo 'Error'
+		fi
 
-    fi
+	fi
 done < "./servers.list"
 
 if [ "$best_server_url" = "" ] ; then
-    echo "No servers found matching: $1"
-    exit 1
+	echo "fastIPvanish: No servers found matching: $1"
+	exit 1
 fi
 
 echo -e "\nBest ping time was "$best_server_url" @ "$best_time"ms"
 
+if [ $config_to_output = true ] ; then
+	sed s/SERVER_HERE/"$best_server_url"/g "$vpn_template"
+fi
+
 # Create a new openvpn config file from a template and the fastest server_url found
-while true; do
-    read -r -p "Write a config File to myvpn.ovpn or Display on screen ? [W/d] " response
-    case $response in
-        [wW]) 
-            sed s/SERVER_HERE/"$best_server_url"/g vpn_template > myvpn.ovpn
-            if ! [ "$EUID" -ne 0 ] ; then
-                while true; do
-                    read -r -p "Restart openvpn using the new myvpn.ovpn config? [Y/n] " response
-                    case $response in
-                        [sS][Ee]|[yY])
-                            killall openvpn
-                            openvpn ./myvpn.ovpn
-                            break
-                            ;;
-                        [oO]|[nN])
-                            break
-                            ;;
-                    esac
-                done
-            fi
-            break
-            ;;
-        [dD])
-            sed s/SERVER_HERE/"$best_server_url"/g vpn_template
-            break
-            ;;
-    esac
-done
+if [ $config_to_file = true ] ; then
+	sed s/SERVER_HERE/"$best_server_url"/g "$vpn_template" > "$vpn_config"
+	if [ $restart_openvpn = true ] ; then
+		if [ "$EUID" -eq 0 ] ; then
+			killall openvpn
+			sleep 10
+			openvpn "$vpn_config" &
+		else
+			echo 'fastIPvanish: root privileges are needed for -Wr to start/stop openvpn'
+		fi
+	fi
+fi
