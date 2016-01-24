@@ -2,7 +2,7 @@
 
 usage() {
 	echo 'USAGE'
-	echo '    fastIPvanish [-d] [-W] [-Wr] [t] file [c] file filter'
+	echo '    fastIPvanish [-d] [-W] [-Wr] [-t file] [-c file] filter'
 	echo
 	echo 'DESCRIPTION'
 	echo '    fastIPvanish will ping the servers of IPVanish, returning the times'

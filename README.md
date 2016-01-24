@@ -2,7 +2,7 @@
 
 USAGE
 
-    fastIPvanish [-d] [-W] [-Wr] [t] file [c] file filter
+    fastIPvanish [-d] [-W] [-Wr] [-t file] [-c file] filter
 
 DESCRIPTION
 
