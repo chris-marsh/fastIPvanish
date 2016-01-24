@@ -2,7 +2,7 @@
 
 usage() {
 	echo 'USAGE'
-	echo '    fastIPvanish [-d] [-W] [-Wr] filter'
+	echo '    fastIPvanish [-d] [-W] [-Wr] [t] file [c] file filter'
 	echo
 	echo 'DESCRIPTION'
 	echo '    fastIPvanish will ping the servers of IPVanish, returning the times'
@@ -13,8 +13,8 @@ usage() {
 	echo '    -W    - write a vpn config to file'
 	echo '    -Wr   - write a vpn config file and start/restart openvpn'
 	echo '    -d    - output a vpn config'
-	echo '    -t    - specify a template file, default is ./vpn_template.tmpl'
-	echo '    -c    - specify an output config file, default is ./vpn_config.ovpn'
+	echo '    -t    - specify a template file, default is ./template/defaulte.tmpl'
+	echo '    -c    - specify an output config file, default is ./config.ovpn'
 	echo '    -h    - outputs this message'
 	echo
 	echo 'EXAMPLES'
