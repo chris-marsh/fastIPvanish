@@ -31,7 +31,7 @@ EXAMPLES
     Pinging lcy-c02.ipvanish.com ... 27.190
     Pinging lon-a01.ipvanish.com ... 20.880
     Pinging lon-a02.ipvanish.com ... 22.247
-    Pinging lon-a03.ipvanish.com ... 16.493
+    Pinging lon-a03.ipvanish.com ... 15.493
     Pinging lon-a04.ipvanish.com ... 15.537
     [...]
     Pinging lon-c01.ipvanish.com ... 71.098
