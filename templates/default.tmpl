@@ -7,9 +7,9 @@ nobind
 persist-key
 persist-tun
 persist-remote-ip
-ca ca.ipvanish.com.crt
+ca ./ca.ipvanish.com.crt
 tls-remote SERVER_HERE
-auth-user-pass
+auth-user-pass ./pass.txt
 comp-lzo
 verb 3
 auth SHA256
