@@ -22,7 +22,7 @@ usage() {
 	echo '    fastIPvanish -d US'
 	echo '    fastIPvanish -Wr New-York'
 	echo '    fastIPvanish -W Amsterdam'
-	exit
+	exit 1
 }
 
 # Argument parsing
@@ -44,7 +44,7 @@ while [[ $1 ]]; do
 		'-t') vpn_template=$2 ; shift ;;
 		'-c') vpn_config=$2 ; shift ;;
 		'-h'|'--help') usage ;;
-		-*) echo "fastIPvanish: Option \`$1' is not valid." ; exit 5 ;;
+		-*) echo "fastIPvanish: Option \`$1' is not valid." ; exit 128 ;;
 		*) filter=$1 ;;
 	esac
 	shift
@@ -109,6 +109,7 @@ if [ $config_to_file = true ] ; then
 			openvpn "$vpn_config" &
 		else
 			echo 'fastIPvanish: root privileges are needed for -Wr to start/stop openvpn'
+			exit 126
 		fi
 	fi
 fi
