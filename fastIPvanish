@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Enforce an argument to use for filtering the servers
+if [ -z "$1" ] ; then
+  echo "Please provide a location filter."
+  echo "... eg $ fastIPvanish London"
+  echo "... eg $ fastIPvanish US"
+  exit 1
+fi
+
+# Initialize the variables
+best_time="999999"
+best_server_url=""
+
+# Start reading the server file one line at a time
+while IFS='' read -r line || [[ -n "$line" ]] ; do
+
+  # Check the cli argument is a substring of the line
+    if ! [ "${line/$1}" = "$line" ] ; then
+
+      # Create the server_url url from the line
+      server_url=$(echo $line | awk -F'-' '{print $(NF-1) "-" $NF ".ipvanish.com"}')
+
+       # Make a short ping and from the output, save the millisecond time
+      echo -n "Pinging $server_url ... "
+      time_str=$(ping -c 1 -q -s 16 -w 1 -W 1 $server_url | grep avg | awk -F'/' '{print $5}')
+      echo $time_str
+
+      # Only the whole number part is needed, truncate at the decimal point
+      time=${time_str/.*/}
+
+      # If the time is quicker than previous pings, store the server_url & time
+      if [ "$time" -lt "$best_time" ] ; then
+        best_server_url=$server_url
+        best_time=$time
+      fi
+
+    fi
+done < "./servers.list"
+
+if [ "$best_server_url" = "" ] ; then
+  echo "No servers found matching: $1"
+  exit 1
+fi
+
+echo -e "\nBest ping time was "$best_server_url" @ "$best_time"ms"
+
+# Create a new openvpn config file from a template and the fastest server_url found
+while true; do
+  read -r -p "Write a config File to myvpn.ovpn or Display on screen ? [W/d] " response
+  case $response in
+      [wW]) 
+        sed s/SERVER_HERE/"$best_server_url"/g vpn_template > myvpn.ovpn
+        while true; do
+          read -r -p "Restart openvpn using the new myvpn.ovpn config? [Y/n] " response
+          case $response in
+            [sS][Ee]|[yY])
+              killall openvpn
+              openvpn ./myvpn.ovpn
+              return 0
+              ;;
+            [oO]|[nN])
+              return 0
+              ;;
+          esac
+        done
+        return 0
+        ;;
+      [dD])
+        sed s/SERVER_HERE/"$best_server_url"/g vpn_template
+        return 0
+        ;;
+  esac
+done

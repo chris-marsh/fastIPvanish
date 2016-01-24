@@ -1,0 +1,18 @@
+client
+dev tun
+proto udp
+remote SERVER_HERE 443
+resolv-retry infinite
+nobind
+persist-key
+keepalive 10 120
+persist-remote-ip
+ca ./ca.ipvanish.com.crt
+tls-remote SERVER_HERE
+auth-user-pass ./pass.txt
+verb 3
+comp-lzo
+auth SHA256
+cipher AES-256-CBC
+keysize 256
+tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA
