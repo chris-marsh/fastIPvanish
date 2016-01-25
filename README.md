@@ -60,12 +60,12 @@ EXAMPLES
 
 ##Installation
 
-    ###Method 1 - Downloading with git
+###Method 1 - Downloading with git
 
     $ git clone https://github.com/chris-marsh/fastIPvanish.git
     $ cd fastIPvanish
 
-    ###Method 2 - Download the zip archive
+###Method 2 - Download the zip archive
 
     Download the archive from https://github.com/chris-marsh/fastIPvanish/archive/master.zip
 
@@ -74,7 +74,7 @@ EXAMPLES
     $ mv ./fastIPvanish-master ./fastIPvanish
     $ cd ./fastIPvanish
 
-    ###Configure the login with your IPVanish username and password
+###Configure the login with your IPVanish username and password
 
     $ cp ./login.config.example ./login.config
 
