@@ -1,4 +1,21 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# fastIPvanish - a shell script to find the most responsive IPVanish VPN server
+#
+# Copyright 2016, Chris Marsh <https://github.com/chris-marsh/fastIPvanish>
+#
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or any later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License at
+# <http://www.gnu.org/licenses/> for more details.
+#
+# Requirements: awk, grep, ping & sed
+#
+# -----------------------------------------------------------------------------
 
 usage() {
 	echo 'USAGE'
@@ -6,7 +23,7 @@ usage() {
 	echo
 	echo 'DESCRIPTION'
 	echo '    fastIPvanish will ping the servers of IPVanish, returning the times'
-	echo '    and shows the fastest responding server. Optionally, a config file'
+	echo '    and show the fastest responding server. Optionally, a config file'
 	echo '    can be written to file and used to start an openvpn session.'
 	echo
 	echo 'OPTIONS'
@@ -25,7 +42,26 @@ usage() {
 	exit 1
 }
 
-# Argument parsing
+# Helper function, show a yes/no question and loop until given a valid response
+# usage: ask "question" [default]
+
+ask() {
+	while true; do
+		read -p "$1 [Y/n] " response
+		case $response in
+			[Yy]* ) return 0 ;;
+			[Nn]* ) return 1 ;;
+			"" )
+				if [ "$2" = "Y" ] ; then
+					return 0
+				elif [ "$2" = "N" ] ; then
+					return 1
+				fi ;;
+		esac
+	done
+}
+
+# At least one argument is needed for the search filter
 [[ $1 ]] || usage
 
 # Initialize the options
@@ -36,6 +72,7 @@ config_to_file=false
 config_to_output=false
 restart_openvpn=false
 
+# Argument parsing
 while [[ $1 ]]; do
 	case "$1" in
 		'-W') config_to_file=true ;;
@@ -44,12 +81,13 @@ while [[ $1 ]]; do
 		'-t') vpn_template=$2 ; shift ;;
 		'-c') vpn_config=$2 ; shift ;;
 		'-h'|'--help') usage ;;
-		-*) echo "fastIPvanish: Option \`$1' is not valid." ; exit 128 ;;
+		-*) echo "fastIPvanish: Option '$1' is not valid." ; exit 128 ;;
 		*) filter=$1 ;;
 	esac
 	shift
 done
 
+# Make sure we have a search filter
 if [ "$filter" = "" ] ; then
 	usage;
 fi
@@ -101,7 +139,11 @@ fi
 
 # Create a new openvpn config file from a template and the fastest server_url found
 if [ $config_to_file = true ] ; then
+	echo "Saving config file: "$vpn_config
 	sed s/SERVER_HERE/"$best_server_url"/g "$vpn_template" > "$vpn_config"
+	if ! ask "Start/Restart openvpn now?" "Y"  ; then
+		restart_openvpn=false
+	fi
 	if [ $restart_openvpn = true ] ; then
 		if [ "$EUID" -eq 0 ] ; then
 			killall openvpn

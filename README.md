@@ -7,7 +7,7 @@ USAGE
 DESCRIPTION
 
     fastIPvanish will ping the servers of IPVanish, returning the times
-    and shows the fastest responding server. Optionally, a config file
+    and show the fastest responding server. Optionally, a config file
     can be written to file and used to start an openvpn session.
 
 OPTIONS
