@@ -146,7 +146,8 @@ if [ $config_to_file = true ] ; then
 		restart_openvpn=false
 	fi
 	if [ $restart_openvpn = true ] ; then
-		if [ "$EUID" -eq 0 ] ; then
+		# Check for root privileges
+		if [ "$(id -u)" = "0" ] ; then
 			killall openvpn
 			sleep 10
 			openvpn "$vpn_config" &
