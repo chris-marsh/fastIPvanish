@@ -107,22 +107,23 @@ while IFS='' read -r line || [[ -n "$line" ]] ; do
 
 		# Make a short ping and from the output, save the millisecond time
 		echo -n "Pinging $server_url ... "
-		time_str=$(ping -c 1 -q -s 16 -w 1 -W 1 $server_url | grep avg | awk -F'/' '{print $5}')
+		time_str=$(ping -c 1 -q -s 16 -w 1 -W 1 $server_url 2> /dev/null | grep avg | awk -F'/' '{print $5}')
 
 		# Only the whole number part is needed, truncate at the decimal point
 		time=${time_str/.*/}
 
-		if [[ $time =~ ^-?[0-9]+$ ]] ; then
-			echo $time_str
-			# If the time is quicker than previous pings, store the server_url & time
-			if [ "$time" -lt "$best_time" ] ; then
-				best_server_url=$server_url
-				best_time=$time
-			fi
-		else
-			echo 'Error'
-		fi
-
+		# Check the time is a number not an string message!
+		case $time in                                                                           
+			''|*[!0-9]*)                                                                    
+				echo 'Error' ;;                                                         
+			*)                                                                              
+				echo $time_str                                                          
+				# If the time is quicker than previous pings, store the server_url & time
+				if [ "$time" -lt "$best_time" ] ; then                                   
+					best_server_url=$server_url                                      
+					best_time=$time                                                  
+				fi ;;                                                                    
+		esac         
 	fi
 done < "./servers.list"
 
