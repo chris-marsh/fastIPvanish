@@ -142,18 +142,17 @@ fi
 if [ $config_to_file = true ] ; then
 	echo "Saving config file: "$vpn_config
 	sed s/SERVER_HERE/"$best_server_url"/g "$vpn_template" > "$vpn_config"
-	if ! ask "Start/Restart openvpn now?" "Y"  ; then
-		restart_openvpn=false
-	fi
 	if [ $restart_openvpn = true ] ; then
-		# Check for root privileges
-		if [ "$(id -u)" = "0" ] ; then
-			killall openvpn
-			sleep 10
-			openvpn "$vpn_config" &
-		else
-			echo 'fastIPvanish: root privileges are needed for -Wr to start/stop openvpn'
-			exit 126
-		fi
+	    if ask "Start/Restart openvpn now?" "Y"  ; then
+            # Check for root privileges
+            if [ "$(id -u)" = "0" ] ; then
+                killall openvpn
+                sleep 10
+                openvpn "$vpn_config" &
+            else
+                echo 'fastIPvanish: root privileges are needed for -Wr to start/stop openvpn'
+                exit 126
+            fi
+        fi
 	fi
 fi
