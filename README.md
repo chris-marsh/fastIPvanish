@@ -57,3 +57,25 @@ EXAMPLES
     cipher AES-256-CBC
     keysize 256
     tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA
+
+##Installation
+
+    ###Method 1 - Downloading with git
+
+    $ git clone https://github.com/chris-marsh/fastIPvanish.git
+    $ cd fastIPvanish
+
+    ###Method 2 - Download the zip archive
+
+    Download the archive from https://github.com/chris-marsh/fastIPvanish/archive/master.zip
+
+    $ wget https://github.com/chris-marsh/fastIPvanish/archive/master.zip
+    $ unzip ./master.zip
+    $ mv ./fastIPvanish-master ./fastIPvanish
+    $ cd ./fastIPvanish
+
+    ###Configure the login with your IPVanish username and password
+
+    $ cp ./login.config.example ./login.config
+
+    Edit ./login.config and change 'USERNAME' and 'PASSWORD' to your actual details.
