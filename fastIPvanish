@@ -30,7 +30,7 @@ usage() {
 	echo '    -W    - write a vpn config to file'
 	echo '    -Wr   - write a vpn config file and start/restart openvpn'
 	echo '    -d    - output a vpn config'
-	echo '    -t    - specify a template file, default is ./template/defaulte.tmpl'
+	echo '    -t    - specify a template file, default is ./template/default.tmpl'
 	echo '    -c    - specify an output config file, default is ./config.ovpn'
 	echo '    -h    - outputs this message'
 	echo
@@ -93,7 +93,7 @@ if [ "$filter" = "" ] ; then
 fi
 
 # Initialize the variables
-best_time="999999"
+best_ping_time="999999"
 best_server_url=""
 
 # Start reading the server file one line at a time
@@ -102,7 +102,7 @@ while IFS='' read -r line || [[ -n "$line" ]] ; do
 	# Check the cli argument is a substring of the line
 	if ! [ "${line/$filter}" = "$line" ] ; then
 
-		# Create the server_url url from the line
+		# Create the server url from the line
 		server_url=$(echo $line | awk -F'-' '{print $(NF-1) "-" $NF ".ipvanish.com"}')
 
 		# Make a short ping and from the output, save the millisecond time
@@ -112,16 +112,16 @@ while IFS='' read -r line || [[ -n "$line" ]] ; do
 		# Only the whole number part is needed, truncate at the decimal point
 		time=${time_str/.*/}
 
-		# Check the time is a number not an string message!
+		# Check time is a number not a string message
 		case $time in                                                                           
 			''|*[!0-9]*)                                                                    
 				echo 'Error' ;;                                                         
 			*)                                                                              
 				echo $time_str                                                          
-				# If the time is quicker than previous pings, store the server_url & time
-				if [ "$time" -lt "$best_time" ] ; then                                   
+				# If time is less than previous pings, store the server_url & time
+				if [ "$time" -lt "$best_ping_time" ] ; then                                   
 					best_server_url=$server_url                                      
-					best_time=$time                                                  
+					best_ping_time=$time                                                  
 				fi ;;                                                                    
 		esac         
 	fi
@@ -132,7 +132,7 @@ if [ "$best_server_url" = "" ] ; then
 	exit 1
 fi
 
-echo -e "\nBest ping time was "$best_server_url" @ "$best_time"ms"
+echo -e "\nBest ping time was "$best_server_url" @ "$best_ping_time"ms"
 
 if [ $config_to_output = true ] ; then
 	sed s/SERVER_HERE/"$best_server_url"/g "$vpn_template"
@@ -143,14 +143,18 @@ if [ $config_to_file = true ] ; then
 	echo "Saving config file: "$vpn_config
 	sed s/SERVER_HERE/"$best_server_url"/g "$vpn_template" > "$vpn_config"
 	if [ $restart_openvpn = true ] ; then
-	    if ask "Start/Restart openvpn now?" "Y"  ; then
+	    if ask "Stop any running openvpn process and start openvpn with new config?" "Y"  ; then
             # Check for root privileges
             if [ "$(id -u)" = "0" ] ; then
-                killall openvpn
-                sleep 10
-                openvpn "$vpn_config" &
+                openvpn_pid=$(pidof openvpn)
+                # Check if openvpn is already running and stop it if neccesary
+                if [ $openvpn_pid ] ; then
+                    kill $openvpn_pid
+                    wait $openvpn_pid
+                    openvpn "$vpn_config" &
+                fi
             else
-                echo 'fastIPvanish: root privileges are needed for -Wr to start/stop openvpn'
+                echo 'fastIPvanish: root privileges are required for -Wr to start/stop openvpn'
                 exit 126
             fi
         fi
