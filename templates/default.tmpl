@@ -7,10 +7,10 @@ nobind
 persist-key
 persist-tun
 persist-remote-ip
-ca ./ca.ipvanish.com.crt
+ca ./etc/ca.ipvanish.com.crt
 remote-cert-tls server
 auth-nocache
-auth-user-pass ./login.config
+auth-user-pass ./etc/login.config
 comp-lzo
 verb 3
 auth SHA256

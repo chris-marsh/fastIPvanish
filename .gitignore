@@ -1,2 +1,2 @@
 *.ovpn
-login.config
+etc/login.config
