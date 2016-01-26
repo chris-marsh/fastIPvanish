@@ -6,9 +6,11 @@ USAGE
 
 DESCRIPTION
 
-    fastIPvanish will ping the servers of IPVanish, returning the times
-    and show the fastest responding server. Optionally, a config file
-    can be written to file and used to start an openvpn session.
+    Automatically find and connect to the fastest responding VPN server. 
+
+    fastIPvanish will ping the VPN servers of IPVanish (https://www.ipvanish.com),
+    returning the times and show the fastest responding server. Optionally, a
+    config file can be written to file and used to start an openvpn session.
 
 OPTIONS
 
