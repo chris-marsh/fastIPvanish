@@ -135,12 +135,13 @@ fi
 echo -e "\nBest ping time was "$best_server_url" @ "$best_ping_time"ms"
 
 if [ $config_to_output = true ] ; then
+    echo
     sed s/SERVER_HERE/"$best_server_url"/g "$vpn_template"
 fi
 
 # Create a new openvpn config file from a template and the fastest server_url found
 if [ $config_to_file = true ] ; then
-    echo "Saving config file: "$vpn_config
+    echo -e "\nSaving config file: "$vpn_config
     sed s/SERVER_HERE/"$best_server_url"/g "$vpn_template" > "$vpn_config"
     if [ $restart_openvpn = true ] ; then
         if ask "Stop any running openvpn process and start openvpn with new config?" "Y"  ; then
