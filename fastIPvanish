@@ -80,9 +80,17 @@ write_config() {
     sed -e "s|SERVER_HERE|$best_server_url|g" -e "s|LOGIN_HERE|$login_conf|g" -e "s|CERT_HERE|$cert_file|g" "$opt_template_dir"
 }
 
+# Insert line break if argument is true
 line_space_if() {
     if [ "$1" = true ] ; then
         echo
+    fi
+}
+
+# set temporary file and delete if exists
+cleanup_temp_file() {
+    if [ -f $temp_file ]; then
+        rm $temp_file >/dev/null 2>/dev/null
     fi
 }
 
@@ -122,12 +130,11 @@ fi
 # Initialize the variables
 best_ping_time="999999"
 best_server_url=""
+temp_file=$(script_path)'/fastIPvanish.tmp'
 
 echo 'Starting server pings ... waiting ...'
 
-# set temporary file and delete if exists
-temp_file='/tmp/fastIPvanish.tmp'
-rm $temp_file >/dev/null 2>/dev/null
+cleanup_temp_file
 
 # Start reading the server file one line at a time
 while IFS='' read -r line || [[ -n "$line" ]] ; do
@@ -145,33 +152,37 @@ done < $(script_path)'/etc/servers.list'
 wait
 
 line_space_if  "$opt_list_pings"
-# Read in results from the temp file
-while IFS='' read -r line || [[ -n "$line" ]] ; do
-    server_url=$(echo $line | awk -F'=' '{print $1}')
-    time_str=$(echo $line | awk -F'=' '{print $2}')
 
-    # Remove decimal point for easier number comparison
-    ping_time=$(echo $time_str | sed s/[^0-9]//g)
+if [ -f $temp_file ] ; then
+    # Read in results from the temp file
+    while IFS='' read -r line || [[ -n "$line" ]] ; do
+        server_url=$(echo $line | awk -F'=' '{print $1}')
+        time_str=$(echo $line | awk -F'=' '{print $2}')
 
-    # Check time is a number not a string message
-    case $ping_time in                                                                           
-        ''|*[!0-9]*)                                                                    
-            if [ "$opt_list_pings" = true ] ; then 
-                echo $server_url' : Error'
-            fi
-            ;;                                                         
-        *)  
-            if [ "$opt_list_pings" = true ] ; then
-                echo $server_url' : '$time_str
-            fi
-            # If time is less than previous pings, store the server_url & time
-            if [ "$ping_time" -lt "$best_ping_time" ] ; then                                   
-                best_server_url=$server_url                                      
-                best_ping_time=$ping_time                                                  
-            fi ;;                                                                    
-    esac         
-done < $temp_file
-line_space_if  "$opt_list_pings"
+        # Remove decimal point for easier number comparison
+        ping_time=$(echo $time_str | sed s/[^0-9]//g)
+
+        # Check time is a number not a string message
+        case $ping_time in                                                                           
+            ''|*[!0-9]*)                                                                    
+                if [ "$opt_list_pings" = true ] ; then 
+                    echo $server_url' : Error'
+                fi
+                ;;                                                         
+            *)  
+                if [ "$opt_list_pings" = true ] ; then
+                    echo $server_url' : '$time_str
+                fi
+                # If time is less than previous pings, store the server_url & time
+                if [ "$ping_time" -lt "$best_ping_time" ] ; then                                   
+                    best_server_url=$server_url                                      
+                    best_ping_time=$ping_time                                                  
+                fi ;;                                                                    
+        esac         
+    done < $temp_file
+    line_space_if  "$opt_list_pings"
+    cleanup_temp_file
+fi
 
 if [ "$best_server_url" = "" ] ; then
     echo "fastIPvanish: No servers found matching: $opt_filter"
