@@ -126,7 +126,7 @@ echo 'Starting server pings ... waiting ...'
 
 # set temporary file and delete if exists
 temp_file='/tmp/fastIPvanish.tmp'
-rm $temp_file > /dev/null
+rm $temp_file >/dev/null 2>/dev/null
 
 # Start reading the server file one line at a time
 while IFS='' read -r line || [[ -n "$line" ]] ; do
