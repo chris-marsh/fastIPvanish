@@ -44,7 +44,6 @@ usage() {
 
 # Helper function, show a yes/no question and loop until given a valid response
 # usage: ask "question" [default]
-
 ask() {
     while true; do
         read -p "$1 [Y/n] " response
@@ -61,13 +60,31 @@ ask() {
     done
 }
 
+# Helper function, return the qualified path of this script
+# usage: thePath=$(scriptPath)
+script_path() {
+    pushd `dirname $0` > /dev/null
+    pwd
+}
+
+# Write an openvpn config file using a template
+# Global variables are read here;
+#   $best_server_url
+#   $vpn_template
+
+write_config() {
+    login_conf=$(script_path)'/etc/login.conf'
+    cert_file=$(script_path)'/etc/ca.ipvanish.com.crt'
+    sed -e "s|SERVER_HERE|$best_server_url|g" -e "s|LOGIN_HERE|$login_conf|g" -e "s|CERT_HERE|$cert_file|g" "$vpn_template"
+}
+
 # At least one argument is needed for the search filter
 [[ $1 ]] || usage
 
 # Initialize the options
 filter=''
-vpn_template='./templates/default.tmpl'
-vpn_config='./config.ovpn'
+vpn_template=$(script_path)'/templates/default.tmpl'
+vpn_config=$(script_path)'/config.ovpn'
 config_to_file=false
 config_to_output=false
 restart_openvpn=false
@@ -125,7 +142,7 @@ while IFS='' read -r line || [[ -n "$line" ]] ; do
                 fi ;;                                                                    
         esac         
     fi
-done < "./etc/servers.list"
+done < $(script_path)'/etc/servers.list'
 
 if [ "$best_server_url" = "" ] ; then
     echo "fastIPvanish: No servers found matching: $filter"
@@ -136,13 +153,13 @@ echo -e "\nBest ping time was "$best_server_url" @ "$best_ping_time"ms"
 
 if [ $config_to_output = true ] ; then
     echo
-    sed s/SERVER_HERE/"$best_server_url"/g "$vpn_template"
+    write_config
 fi
 
 # Create a new openvpn config file from a template and the fastest server_url found
 if [ $config_to_file = true ] ; then
     echo -e "\nSaving config file: "$vpn_config
-    sed s/SERVER_HERE/"$best_server_url"/g "$vpn_template" > "$vpn_config"
+    write_config > "$vpn_config"
     if [ $restart_openvpn = true ] ; then
         if ask "Stop any running openvpn process and start openvpn with new config?" "Y"  ; then
             # Check for root privileges, NOTE: $EUID is not available on busybox/openelec
