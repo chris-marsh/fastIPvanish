@@ -2,7 +2,7 @@
 
 USAGE
 
-    fastIPvanish [-d] [-W] [-Wr] [-t file] [-c file] filter
+    fastIPvanish [-l] [-d] [-W] [-Wr] [-t file] [-c file] filter
 
 DESCRIPTION
 
@@ -14,6 +14,7 @@ DESCRIPTION
 
 OPTIONS
 
+    -l    - list the ping result from each server
     -W    - write a vpn config to file
     -Wr   - write a vpn config file and start/restart openvpn
     -d    - output a vpn config
@@ -24,24 +25,28 @@ OPTIONS
 EXAMPLE 1
 
     $ ./fastIPvanish ZA
-    Pinging jnb-c01.ipvanish.com ... 204.877
-    Pinging jnb-c02.ipvanish.com ... 195.959
-    Pinging jnb-c03.ipvanish.com ... 200.524
-    Pinging jnb-c04.ipvanish.com ... 208.258
-    Pinging jnb-c05.ipvanish.com ... 200.515
-    
-    Best ping time was jnb-c02.ipvanish.com @ 195ms
+    Starting server pings ... waiting ...
+    Best ping time was jnb-c02.ipvanish.com @ 195.959ms
     
 EXAMPLE 2
 
-    $ ./fastIPvanish -d Liverpool
-    Pinging lpl-c01.ipvanish.com ... 29.485
-    Pinging lpl-c02.ipvanish.com ... 49.505
-    Pinging lpl-c03.ipvanish.com ... 43.210
-    Pinging lpl-c04.ipvanish.com ... 47.525
-    Pinging lpl-c05.ipvanish.com ... 39.772
+    $ ./fastIPvanish -W Seattle
+    Starting server pings ... waiting ...
+    Best ping time was sea-a12.ipvanish.com @ 148.956ms
+    Saving config file: /home/user/fastIPvanish/config.ovpn
 
-    Best ping time was lpl-c01.ipvanish.com @ 29ms
+EXAMPLE 3
+
+    $ ./fastIPvanish -l -d Liverpool
+    Starting server pings ... waiting ...
+
+    Pinging lpl-c01.ipvanish.com : 29.485
+    Pinging lpl-c02.ipvanish.com : 49.505
+    Pinging lpl-c03.ipvanish.com : 43.210
+    Pinging lpl-c04.ipvanish.com : 47.525
+    Pinging lpl-c05.ipvanish.com : 39.772
+
+    Best ping time was lpl-c01.ipvanish.com @ 29.485ms
 
     client
     dev tun
@@ -66,13 +71,8 @@ EXAMPLE 2
 EXAMPLE 3
 
     $ ./fastIPvanish -d -Wr New-York -t ./templates/openelec.tmpl
-    Pinging nyc-a01.ipvanish.com ... 94.724
-    Pinging nyc-a02.ipvanish.com ... 96.838
-    Pinging nyc-a03.ipvanish.com ... 88.209
-    [...]
-    Pinging nyc-a26.ipvanish.com ... 88.709
-
-    Best ping time was nyc-a03.ipvanish.com @ 88ms
+    Starting server pings ... waiting ...
+    Best ping time was nyc-a03.ipvanish.com @ 88.209ms
 
     client
     dev tun
