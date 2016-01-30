@@ -72,6 +72,8 @@ EXAMPLE 3
     [...]
     Pinging nyc-a26.ipvanish.com ... 88.709
 
+    Best ping time was nyc-a03.ipvanish.com @ 88ms
+
     client
     dev tun
     proto udp
@@ -92,8 +94,6 @@ EXAMPLE 3
     cipher AES-256-CBC
     keysize 256
     tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA
-
-    Best ping time was nyc-a03.ipvanish.com @ 88ms
 
     Saving config file: /home/user/fastIPvanish/config.ovpn
     Stop any running openvpn process and start openvpn with new config? [Y/n] y
