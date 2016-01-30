@@ -52,10 +52,10 @@ EXAMPLE 2
     persist-key
     persist-tun
     persist-remote-ip
-    ca /home/chris/projects/fastIPvanish/etc/ca.ipvanish.com.crt
+    ca /home/user/fastIPvanish/etc/ca.ipvanish.com.crt
     remote-cert-tls server
     auth-nocache
-    auth-user-pass /home/chris/projects/fastIPvanish/etc/login.conf
+    auth-user-pass /home/user/fastIPvanish/etc/login.conf
     comp-lzo
     verb 3
     auth SHA256
@@ -65,17 +65,39 @@ EXAMPLE 2
 
 EXAMPLE 3
 
-    $ ./fastIPvanish -Wr New-York -t ./templates/openelec.tmpl
+    $ ./fastIPvanish -d -Wr New-York -t ./templates/openelec.tmpl
     Pinging nyc-a01.ipvanish.com ... 94.724
     Pinging nyc-a02.ipvanish.com ... 96.838
     Pinging nyc-a03.ipvanish.com ... 88.209
     [...]
     Pinging nyc-a26.ipvanish.com ... 88.709
 
+    client
+    dev tun
+    proto udp
+    remote nyc-a04.ipvanish.com 1194
+    resolv-retry infinite
+    nobind
+    persist-key
+    persist-tun
+    persist-remote-ip
+    keepalive 10 120
+    ca /home/user/fastIPvanish/etc/ca.ipvanish.com.crt
+    remote-cert-tls server
+    auth-nocache
+    auth-user-pass /home/user/fastIPvanish/etc/login.conf
+    comp-lzo
+    verb 3
+    auth SHA256
+    cipher AES-256-CBC
+    keysize 256
+    tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA
+
     Best ping time was nyc-a03.ipvanish.com @ 88ms
 
     Saving config file: /home/user/fastIPvanish/config.ovpn
     Stop any running openvpn process and start openvpn with new config? [Y/n] y
+    [...]
 
 ##Installation
 
