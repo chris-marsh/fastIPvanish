@@ -1,2 +1,3 @@
 *.ovpn
 etc/login.conf
+log

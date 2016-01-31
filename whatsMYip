@@ -1,1 +1,5 @@
+#!/bin/bash
+#
+# Use to confirm your IP before and after starting openvpn
+#
 curl http://icanhazip.com

@@ -62,10 +62,8 @@ ask() {
 }
 
 # Helper function, return the qualified path of this script
-# usage: thePath=$(scriptPath)
+# usage: thePath=$(script_path)
 script_path() {
-    # pushd `dirname $0` > /dev/null
-    # pwd
     echo $(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
 }
 
@@ -77,6 +75,19 @@ write_config() {
     login_conf=$(script_path)'/etc/login.conf'
     cert_file=$(script_path)'/etc/ca.ipvanish.com.crt'
     sed -e "s|SERVER_HERE|$best_server_url|g" -e "s|LOGIN_HERE|$login_conf|g" -e "s|CERT_HERE|$cert_file|g" "$opt_template_dir"
+}
+
+prepare_logfile() {
+    mkdir -p $(script_path)'/log'
+    if [ -f $log_file'.2' ]; then
+        mv -f $log_file $log_file'.3'
+    fi
+    if [ -f $log_file'.1' ]; then
+        mv -f $log_file $log_file'.2'
+    fi
+    if [ -f $log_file ]; then
+        mv -f $log_file $log_file'.1'
+    fi
 }
 
 # Insert line break if argument is true
@@ -95,6 +106,12 @@ cleanup_temp_file() {
 
 # At least one argument is needed for the search opt_filter
 [[ $1 ]] || usage
+
+# Initialize the variables
+best_ping_time="999999"
+best_server_url=""
+temp_file=$(script_path)'/fastIPvanish.tmp'
+log_file=$(script_path)'/log/openvpn.log'
 
 # Initialize the options
 opt_filter=''
@@ -125,11 +142,6 @@ done
 if [ "$opt_filter" = "" ] ; then
     usage;
 fi
-
-# Initialize the variables
-best_ping_time="999999"
-best_server_url=""
-temp_file=$(script_path)'/fastIPvanish.tmp'
 
 echo 'Starting server pings ... waiting ...'
 
@@ -204,13 +216,36 @@ if [ $opt_config_to_file = true ] ; then
         if ask "Stop any running openvpn process and start openvpn with new config?" "Y"  ; then
             # Check for root privileges, NOTE: $EUID is not available on busybox/openelec
             if [ "$(id -u)" = "0" ] ; then
+                echo; echo -n "Current external IP is "; ./whatsMYip; echo
                 # Check if openvpn is already running and stop it if neccesary
                 openvpn_pid=$(pidof openvpn)
                 if [ $openvpn_pid ] ; then
+                    echo -n "Stopping existing openvpn process ..."
                     kill $openvpn_pid
-                    wait $openvpn_pid
+                    while ps -p $openvpn_pid > /dev/null; do
+                        sleep 1
+                        echo -n "."
+                    done
+                    echo " Done"
                 fi
-                openvpn "$opt_config_output_file" &
+                echo -n "Starting openvpn ..."
+
+                result=''
+                prepare_logfile
+                openvpn "$opt_config_output_file" > "$log_file" &
+                while [ ! $result ]; do
+                    sleep 1; echo -n "."
+                    if [[ $(grep "Initialization Sequence Completed" "$log_file") ]]; then
+                        result=' Success'
+                    fi
+
+                    if [[ $(grep -i "fail" "$log_file") ]]; then
+                        result='Failed'
+                    fi
+                done
+                echo $result
+                echo; echo -n "External IP is now "
+                ./whatsMYip
             else
                 echo 'fastIPvanish: root privileges are required for -Wr to start/stop openvpn'
                 exit 126
