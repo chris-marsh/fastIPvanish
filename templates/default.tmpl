@@ -9,7 +9,8 @@ persist-tun
 persist-remote-ip
 ca CERT_HERE
 remote-cert-tls server
-auth-nocache
+#auth-nocache removed as user-pass is not re-read on a reconnect
+#auth-nocache
 auth-user-pass LOGIN_HERE
 comp-lzo
 verb 3
