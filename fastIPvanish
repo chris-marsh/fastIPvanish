@@ -73,7 +73,6 @@ script_path() {
 # Global variables are read here;
 #   $best_server_url
 #   $opt_template_dir
-
 write_config() {
     login_conf=$(script_path)'/etc/login.conf'
     cert_file=$(script_path)'/etc/ca.ipvanish.com.crt'
