@@ -117,6 +117,6 @@ EXAMPLE 3
 
 ###Configure the login with your IPVanish username and password
 
-    $ cp ./etc/login.config.example ./etc/login.config
+    $ cp ./etc/login.conf.example ./etc/login.conf
 
-    Edit ./etc/login.config and change 'USERNAME' and 'PASSWORD' to your actual details.
+    Edit ./etc/login.conf and change 'USERNAME' and 'PASSWORD' to your actual details.
