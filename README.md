@@ -31,11 +31,14 @@ EXAMPLE 1
     
 EXAMPLE 2
 
-    $ ./fastIPvanish -w Seattle
+    $ ./fastIPvanish -wu Seattle
+    Retrieving the server list from https://www.ipvanish.com/software/configs/ ... Done
+    Writing new server list ... Done
+    
     Starting server pings ... waiting ...
-    Best ping time was sea-a12.ipvanish.com @ 148.956ms
+    Best ping time was sea-a14.ipvanish.com @ 149.537ms
 
-    Saving config file: /home/user/fastIPvanish/config.ovpn
+    Saving config file: /home/chris/projects/fastIPvanish/config.ovpn
 
 EXAMPLE 3
 
@@ -105,9 +108,9 @@ EXAMPLE 3
     keysize 256
     tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA
 
-    Saving config file: /home/user/fastIPvanish/config.ovpn
-    Stop any running openvpn process and start openvpn with new config? [Y/n] y
-    [...]
+    Stop any openvpn process and openvpn with new config? [Y/n] 
+    Stopping existing openvpn process ........ Done
+    Starting openvpn .......Success
 
 ##Installation
 
