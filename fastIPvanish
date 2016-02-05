@@ -245,7 +245,7 @@ update_server_list() {
     if [ "$?" -ne 0 ]; then
         error_exit "FAILED"
     else
-        echo " Done"; echo;
+        echo " Done";
         if [ -f "$temp_file" ] ; then
             echo -n "Writing new server list ..."
             delete_file $vpn_server_list
@@ -255,7 +255,7 @@ update_server_list() {
                     awk -F'"' '/ipvanish/{print substr($6, 10, length($6)-14)}' \
                     >> "$vpn_server_list"
             done < "$temp_file"
-            echo " Done"
+            echo " Done"; echo;
         fi
         delete_file "$temp_file"
     fi
@@ -393,7 +393,6 @@ main() {
         write_config > "$opt_config_output_file"
     fi
 
-    echo "$opt_start_openvpn"
     if [ $opt_start_openvpn = true ] ; then
         if ask "Stop any openvpn process and openvpn with new config?" "Y" ; then
             start_openvpn

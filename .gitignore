@@ -1,4 +1,4 @@
 *.ovpn
 etc/login.conf
-etc/server.list
+etc/servers.list
 log
