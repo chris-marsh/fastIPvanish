@@ -2,7 +2,7 @@
 
 USAGE
 
-    fastIPvanish [-l] [-d] [-W] [-Wr] [-t file] [-c file] filter
+    fastIPvanish [-u] [-l] [-s] [-w] [-o] [-c file] [-t file] filter
 
 DESCRIPTION
 
@@ -14,13 +14,15 @@ DESCRIPTION
 
 OPTIONS
 
-    -l    - list the ping result from each server
-    -W    - write a vpn config to file
-    -Wr   - write a vpn config file and start/restart openvpn
-    -d    - output a vpn config
-    -t    - specify a template file, default is ./templates/default.tmpl
-    -c    - specify an output config file, default is ./config.ovpn
-    -h    - outputs this message
+OPTIONS
+    -u, --update-servers  - update the server list from IP Vanish
+    -l, --list-pings      - list the ping result from each server
+    -s, --show-config     - output an openvpn config file to screen
+    -w, --write-config    - write an openvpn config to file
+    -o, --start-openvpn   - start/restart openvpn with a config file
+    -c, --config-file     - specify an output config file
+    -t, --template-file   - specify an input template file
+    -h, --help            - outputs this message
 
 EXAMPLE 1
 
@@ -30,14 +32,15 @@ EXAMPLE 1
     
 EXAMPLE 2
 
-    $ ./fastIPvanish -W Seattle
+    $ ./fastIPvanish -w Seattle
     Starting server pings ... waiting ...
     Best ping time was sea-a12.ipvanish.com @ 148.956ms
+
     Saving config file: /home/user/fastIPvanish/config.ovpn
 
 EXAMPLE 3
 
-    $ ./fastIPvanish -l -d Liverpool
+    $ ./fastIPvanish -ls Liverpool
     Starting server pings ... waiting ...
 
     Pinging lpl-c01.ipvanish.com : 29.485
@@ -48,6 +51,11 @@ EXAMPLE 3
 
     Best ping time was lpl-c01.ipvanish.com @ 29.485ms
 
+    ################################
+    ## fastIPvanish template file ##
+    ##                            ##
+    ## default.tmpl               ##
+    ################################
     client
     dev tun
     proto udp
@@ -70,7 +78,7 @@ EXAMPLE 3
 
 EXAMPLE 3
 
-    $ ./fastIPvanish -d -Wr New-York -t ./templates/openelec.tmpl
+    $ ./fastIPvanish New-York -swot ./templates/openelec-udp1194.tmpl
     Starting server pings ... waiting ...
     Best ping time was nyc-a03.ipvanish.com @ 88.209ms
 

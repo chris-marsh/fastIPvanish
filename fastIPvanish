@@ -19,23 +19,25 @@
 
 # TODO: add -f option to 'Force' default answers to all prompts
 
+
 usage() {
     echo 'USAGE'
-    echo '    fastIPvanish [-l] [-d] [-W] [-Wr] [-t file] [-c file] filter'
+    echo '    fastIPvanish [-u] [-l] [-s] [-w] [-o] [-c file] [-t file] filter'
     echo
     echo 'DESCRIPTION'
-    echo '    fastIPvanish will ping the servers of IPVanish, returning the times'
-    echo '    and show the fastest responding server. Optionally, a config file'
-    echo '    can be written to file and used to start an openvpn session.'
+    echo '    fastIPvanish will ping the servers of IPVanish, returning times'
+    echo '    and showing  the fastest responding server. Optionally, a config'
+    echo '    file can be written to file and used to start an openvpn session.'
     echo
     echo 'OPTIONS'
-    echo '    -l    - list the ping result from each server'
-    echo '    -W    - write a vpn config to file'
-    echo '    -Wr   - write a vpn config file and start/restart openvpn'
-    echo '    -d    - output a vpn config'
-    echo '    -t    - specify a template file, default is ./template/default.tmpl'
-    echo '    -c    - specify an output config file, default is ./config.ovpn'
-    echo '    -h    - outputs this message'
+    echo '    -u, --update-servers  - update the server list from IP Vanish'
+    echo '    -l, --list-pings      - list the ping result from each server'
+    echo '    -s, --show-config     - output an openvpn config file to screen'
+    echo '    -w, --write-config    - write an openvpn config to file'
+    echo '    -o, --start-openvpn   - start/restart openvpn with a config file'
+    echo '    -c, --config-file     - specify an output config file'
+    echo '    -t, --template-file   - specify an input template file'
+    echo '    -h, --help            - outputs this message'
     echo
     echo 'EXAMPLES'
     echo '    fastIPvanish -Wr -d London'
@@ -125,21 +127,73 @@ prepare_openvpn_logfile() {
 }
 
 # -----------------------------------------------------------------------------
+# Takes an argument list and expand any group short arguments into seperate
+# options. 
+# Usage:  eval "set -- $(split_opts "$@")"
+#         eval "set -- $(split_opts "-lotr -file /some/file.txt)"
+# The first example passes the cli argument list which returns a split version.
+# The second example would return '-l' '-o' '-t' '-r' '-f' '/some/file.txt'
+split_opts() {
+    local args=""
+    for arg in "$@"; do
+        if [ "${#arg}" -gt 1 ] && [ "${arg:0:1}" = "-" ]; then
+            if [ "${arg:1:1}" = "-" ]; then
+                args="$args '$arg'";
+            else
+                for i in $(seq 1 ${#arg}); do
+                    opt=${arg:$i:1}
+                    if [ ${#opt} -gt 0 ]; then
+                        args="$args '-$opt'";
+                    fi
+                done;
+            fi
+        else
+            args="$args '$arg'";
+        fi
+    done
+    echo $args
+}
+
+# -----------------------------------------------------------------------------
 # Read the cli options & arguments and feed into global variables.
 # Also check options are valid before further unneccesary processing.
 parse_arguments() {
     # Argument parsing
+    eval "set -- $(split_opts "$@")"
     while [[ $1 ]]; do
         case "$1" in
-            '-l') opt_list_pings=true ;;
-            '-W') opt_config_to_file=true ;;
-            '-Wr') opt_config_to_file=true ; opt_restart_openvpn=true ;;
-            '-d') opt_config_to_output=true ;;
-            '-t') opt_template_file=$2 ; shift ;;
-            '-c') opt_config_output_file=$2 ; shift ;;
-            '-h'|'--help') usage ;;
-            -*) error_exit "Option '$1' is not valid." ;;
-            *) opt_filter=$1 ;;
+            '-u'|'--update-servers')
+                opt_update_servers=true
+                ;;
+            '-l'|'--list-pings')
+                opt_list_pings=true
+                ;;
+            '-s'|'--show-config')
+                opt_config_to_output=true
+                ;;
+            '-w'|'--write-config')
+                opt_config_to_file=true
+                ;;
+            '-o'|'--start-openvpn')
+                opt_start_openvpn=true
+                ;;
+            '-c'|'--config-file')
+                opt_config_output_file=$2
+                shift
+                ;;
+            '-t'|'--template-file')
+                opt_template_file=$2
+                shift
+                ;;
+            '-h'|'--help')
+                usage
+                ;;
+            -*)
+                error_exit "Option '$1' is not valid.\nTry '$0 --help for more information."
+                ;;
+            *)
+                opt_filter=$1
+                ;;
         esac
         shift
     done
@@ -153,7 +207,7 @@ parse_arguments() {
 
     # If starting openvpn then root privileges are needed
     # NOTE: $EUID is not available on busybox/openelec
-    if [ "$opt_restart_openvpn" = true ] && [ "$(id -u)" != "0" ] ; then
+    if [ "$opt_start_openvpn" = true ] && [ "$(id -u)" != "0" ] ; then
         error_exit 'Root privileges are required for -Wr to start/stop openvpn.'
     fi
 
@@ -176,10 +230,34 @@ line_break_if() {
 }
 
 # -----------------------------------------------------------------------------
-# Delete temporary file if it exists
-cleanup_temp_file() {
-    if [ -f $temp_file ]; then
-        rm $temp_file >/dev/null 2>/dev/null
+# Delete file if it exists
+delete_file() {
+    if [ -f "$1" ]; then
+        rm "$1" >/dev/null 2>/dev/null
+    fi
+}
+
+# -----------------------------------------------------------------------------
+update_server_list() {
+    delete_file "$temp_file"
+    echo -n "Retrieving the server list from $ipVanish_url ..."
+    curl "$ipVanish_url" 2>/dev/null > "$temp_file"
+    if [ "$?" -ne 0 ]; then
+        error_exit "FAILED"
+    else
+        echo " Done"; echo;
+        if [ -f "$temp_file" ] ; then
+            echo -n "Writing new server list ..."
+            delete_file $vpn_server_list
+            # Read and parse results from the temp file
+            while IFS='' read -r line || [[ -n "$line" ]] ; do
+                echo "$line" | \
+                    awk -F'"' '/ipvanish/{print substr($6, 10, length($6)-14)}' \
+                    >> "$vpn_server_list"
+            done < "$temp_file"
+            echo " Done"
+        fi
+        delete_file "$temp_file"
     fi
 }
 
@@ -192,7 +270,7 @@ ping_servers() {
     local server_url=''
     local ping_time=''
 
-    cleanup_temp_file
+    delete_file "$temp_file"
     echo 'Starting server pings ... waiting ...'
     while IFS='' read -r line || [[ -n "$line" ]] ; do
         if ! [ "${line/$opt_filter}" = "$line" ] ; then
@@ -204,14 +282,14 @@ ping_servers() {
             echo $server_url'=' \
                 $(ping -c 1 -q -s 16 -w 1 -W 1 $server_url 2> /dev/null | \
                 awk -F'/' '/avg/{print $5}') \
-                >> $temp_file &
+                >> "$temp_file" &
         fi
-    done < $vpn_server_list
+    done < "$vpn_server_list"
     wait
 
     line_break_if "$opt_list_pings"
 
-    if [ -f $temp_file ] ; then
+    if [ -f "$temp_file" ] ; then
         # Read and parse results from the temp file
         while IFS='' read -r line || [[ -n "$line" ]] ; do
             server_url=$(echo $line | awk -F'=' '{print $1}')
@@ -240,10 +318,10 @@ ping_servers() {
                         best_ping_time=$ping_time                                                  
                     fi ;;                                                                    
             esac         
-        done < $temp_file
+        done < "$temp_file"
         line_break_if  "$opt_list_pings"
     fi
-    cleanup_temp_file
+    delete_file "$temp_file"
 }
 
 # -----------------------------------------------------------------------------
@@ -285,6 +363,15 @@ start_openvpn() {
 # Entry point to the main script
 main() {
     parse_arguments "$@"
+
+    if [ ! -f "$vpn_server_list" ]; then
+        opt_update_servers=true
+    fi
+
+    if [ "$opt_update_servers" = true ]; then
+        update_server_list
+    fi
+
     ping_servers
 
     if [ "$best_server_url" = "" ] ; then
@@ -304,10 +391,12 @@ main() {
         # Create new openvpn config file from template and fastest server found
         echo -e "\nSaving config file: "$opt_config_output_file
         write_config > "$opt_config_output_file"
-        if [ $opt_restart_openvpn = true ] ; then
-            if ask "Stop any openvpn process and openvpn with new config?" "Y" ; then
-                start_openvpn
-            fi
+    fi
+
+    echo "$opt_start_openvpn"
+    if [ $opt_start_openvpn = true ] ; then
+        if ask "Stop any openvpn process and openvpn with new config?" "Y" ; then
+            start_openvpn
         fi
     fi
 }
@@ -323,15 +412,17 @@ if [[ $1 ]]; then
     temp_file=$(script_path)'/fastIPvanish.tmp'
     openvpn_logfile=$(script_path)'/log/openvpn.log'
     vpn_server_list=$(script_path)'/etc/servers.list'
+    ipVanish_url="https://www.ipvanish.com/software/configs/"
 
     # Initialize the option variables
+    opt_update_servers=false
     opt_filter=''
     opt_list_pings=false
     opt_template_file=$(script_path)'/templates/default.tmpl'
     opt_config_output_file=$(script_path)'/config.ovpn'
     opt_config_to_file=false
     opt_config_to_output=false
-    opt_restart_openvpn=false
+    opt_start_openvpn=false
 
     main "$@"
 else
