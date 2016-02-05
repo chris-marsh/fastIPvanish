@@ -14,7 +14,6 @@ DESCRIPTION
 
 OPTIONS
 
-OPTIONS
     -u, --update-servers  - update the server list from IP Vanish
     -l, --list-pings      - list the ping result from each server
     -s, --show-config     - output an openvpn config file to screen
@@ -67,7 +66,6 @@ EXAMPLE 3
     persist-remote-ip
     ca /home/user/fastIPvanish/etc/ca.ipvanish.com.crt
     remote-cert-tls server
-    auth-nocache
     auth-user-pass /home/user/fastIPvanish/etc/login.conf
     comp-lzo
     verb 3
@@ -82,6 +80,11 @@ EXAMPLE 3
     Starting server pings ... waiting ...
     Best ping time was nyc-a03.ipvanish.com @ 88.209ms
 
+    ################################
+    ## fastIPvanish template file ##
+    ##                            ##
+    ## openelec-udp1194.tmpl      ##
+    ################################
     client
     dev tun
     proto udp
@@ -94,7 +97,6 @@ EXAMPLE 3
     keepalive 10 120
     ca /home/user/fastIPvanish/etc/ca.ipvanish.com.crt
     remote-cert-tls server
-    auth-nocache
     auth-user-pass /home/user/fastIPvanish/etc/login.conf
     comp-lzo
     verb 3
