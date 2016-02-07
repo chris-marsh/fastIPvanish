@@ -2,7 +2,8 @@
 
 USAGE
 
-    fastIPvanish [-u] [-l] [-s] [-w] [-o] [-c file] [-t file] filter
+    fastIPvanish [-u] [-o] [-f] [-h] [-v]
+                 [ [-l] [-s] [-w] [-c file] [-t file] filter ]
 
 DESCRIPTION
 
@@ -15,13 +16,15 @@ DESCRIPTION
 OPTIONS
 
     -u, --update-servers  - update the server list from IP Vanish
+    -o, --start-openvpn   - start/restart openvpn with a config file
+    -f, --force-defaults  - non-interactive mode without prompts
     -l, --list-pings      - list the ping result from each server
     -s, --show-config     - output an openvpn config file to screen
     -w, --write-config    - write an openvpn config to file
-    -o, --start-openvpn   - start/restart openvpn with a config file
     -c, --config-file     - specify an output config file
     -t, --template-file   - specify an input template file
-    -h, --help            - outputs this message
+    -h, --help            - display help information
+    -c, --version         - output version information
 
 EXAMPLE 1
 

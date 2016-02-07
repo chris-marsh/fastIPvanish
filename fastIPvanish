@@ -2,7 +2,7 @@
 # -----------------------------------------------------------------------------
 # fastIPvanish - a shell script to find the most responsive IPVanish VPN server
 #
-# Copyright 2016, Chris Marsh <https://github.com/chris-marsh/fastIPvanish>
+# Copyright (C) 2016, Chris Marsh <https://github.com/chris-marsh/fastIPvanish>
 #
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -16,13 +16,10 @@
 # Requirements: sed, awk, grep, ping & openvpn
 #
 # -----------------------------------------------------------------------------
-
-# TODO: add -f option to 'Force' default answers to all prompts
-
-
 usage() {
     echo 'USAGE'
-    echo '    fastIPvanish [-u] [-l] [-s] [-w] [-o] [-c file] [-t file] filter'
+    echo '    fastIPvanish [-u] [-o] [-f] [-h] [-v]'
+    echo '                 [ [-l] [-s] [-w] [-c file] [-t file] filter ]'
     echo
     echo 'DESCRIPTION'
     echo '    fastIPvanish will ping the servers of IPVanish, returning times'
@@ -31,20 +28,32 @@ usage() {
     echo
     echo 'OPTIONS'
     echo '    -u, --update-servers  - update the server list from IP Vanish'
+    echo '    -o, --start-openvpn   - start/restart openvpn with a config file'
+    echo '    -f, --force-defaults  - non-interactive mode without prompts'
     echo '    -l, --list-pings      - list the ping result from each server'
     echo '    -s, --show-config     - output an openvpn config file to screen'
     echo '    -w, --write-config    - write an openvpn config to file'
-    echo '    -o, --start-openvpn   - start/restart openvpn with a config file'
     echo '    -c, --config-file     - specify an output config file'
     echo '    -t, --template-file   - specify an input template file'
-    echo '    -h, --help            - outputs this message'
+    echo '    -h, --help            - display this help'
+    echo '    -v, --version         - output version information'
     echo
     echo 'EXAMPLES'
-    echo '    fastIPvanish -Wr -d London'
-    echo '    fastIPvanish -d US'
-    echo '    fastIPvanish -Wr New-York'
-    echo '    fastIPvanish -W Amsterdam'
+    echo '    fastIPvanish -wo -s London'
+    echo '    fastIPvanish -s US'
+    echo '    fastIPvanish -wo New-York'
+    echo '    fastIPvanish -w Amsterdam'
     exit 1
+}
+
+# -----------------------------------------------------------------------------
+version() {
+    echo 'Copyright (C) 2016 Chris Marsh.'
+    echo 'License GPLv3+: GNU GPL version 3 or later '\
+        '<http://gnu.org/licenses/gpl.html>.'
+    echo 'This is free software: you are free to change and redistribute it.'
+    echo 'There is NO WARRANTY, to the extent permitted by law.'
+    exit 0
 }
 
 # -----------------------------------------------------------------------------
@@ -181,12 +190,19 @@ parse_arguments() {
                 opt_config_output_file=$2
                 shift
                 ;;
+            '-f'|'--force-defaults')
+                opt_force_defaults=true
+                shift
+                ;;
             '-t'|'--template-file')
                 opt_template_file=$2
                 shift
                 ;;
             '-h'|'--help')
                 usage
+                ;;
+            '-v'|'--version')
+                version
                 ;;
             -*)
                 error_exit "Option '$1' is not valid.\nTry '$0 --help for more information."
@@ -200,25 +216,34 @@ parse_arguments() {
 
     # "Kill early" argument checks ....
 
-    # Make sure we have a search opt_filter
-    if [ "$opt_filter" = "" ] ; then
-        usage;
-    fi
-
     # If starting openvpn then root privileges are needed
     # NOTE: $EUID is not available on busybox/openelec
     if [ "$opt_start_openvpn" = true ] && [ "$(id -u)" != "0" ] ; then
-        error_exit 'Root privileges are required for -Wr to start/stop openvpn.'
+        error_exit 'Root privileges are required for -o to start/stop openvpn.'
     fi
 
+    find_template
     # Does the template file exist?
     if [ ! -f $opt_template_file ]; then
-        #TODO allow single word template such as 'default'. The script will then
-        # translate to filenames and check if valid, examples ...
-        # 'default' -> 'templates/default.tmpl'
-        # 'openelec' -> 'templates/openelec.tmpl'
         error_exit "Template does not exist! ... $opt_template_file"
     fi
+}
+
+# -----------------------------------------------------------------------------
+# Check if the template exists. If not ...
+# (1) check if the filename exists in the template directory
+# (2) check if it exists in tyhe template directory WITh '.tmpl. extension
+find_template() {
+    if [ -f $opt_template_file ]; then
+        return 0
+    elif [ -f $(script_path)"/templates/$opt_template_file" ]; then
+        opt_template_file=$(script_path)"/templates/$opt_template_file"
+        return 0
+    elif [ -f $(script_path)"/templates/$opt_template_file.tmpl" ]; then
+        opt_template_file=$(script_path)"/templates/$opt_template_file.tmpl"
+        return 0
+    fi
+    return 1
 }
 
 # -----------------------------------------------------------------------------
@@ -238,10 +263,16 @@ delete_file() {
 }
 
 # -----------------------------------------------------------------------------
+# Grab the VPN server list directly from IP Vanish.
+# The html page returned is a file list. Fortunately the file list contains enough
+# info to identify a Geo location and a unique url. The VPN servers will be stored
+# in the form: CY-City-xyx.c01
+# where CY is a two letter country code, followed by a city. The following two
+# sections identify the server. eg, xyz.c01.ipvanish.com
 update_server_list() {
     delete_file "$temp_file"
-    echo -n "Retrieving the server list from $ipVanish_url ..."
-    curl "$ipVanish_url" 2>/dev/null > "$temp_file"
+    echo -n "Retrieving the server list from $ip_vanish_url ..."
+    curl "$ip_vanish_url" 2>/dev/null > "$temp_file"
     if [ "$?" -ne 0 ]; then
         error_exit "FAILED"
     else
@@ -251,11 +282,10 @@ update_server_list() {
             delete_file $vpn_server_list
             # Read and parse results from the temp file
             while IFS='' read -r line || [[ -n "$line" ]] ; do
-                echo "$line" | \
-                    awk -F'"' '/ipvanish/{print substr($6, 10, length($6)-14)}' \
+                awk -F'"' '/ipvanish/{print substr($6, 10, length($6)-14)}' $list \
                     >> "$vpn_server_list"
             done < "$temp_file"
-            echo " Done"; echo;
+            echo " Done";
         fi
         delete_file "$temp_file"
     fi
@@ -372,19 +402,19 @@ main() {
         update_server_list
     fi
 
-    ping_servers
+    if [ -n "$opt_filter" ]; then
+        ping_servers
+        if [ "$best_server_url" = "" ] ; then
+            error_exit "No servers found matching: $opt_filter"
+        fi
+        best_ping_time=$(echo $best_ping_time | sed 's/...$/.&/')
+        echo "Best ping time was "$best_server_url" @ "$best_ping_time"ms"
 
-    if [ "$best_server_url" = "" ] ; then
-        error_exit "No servers found matching: $opt_filter"
-    fi
-
-    best_ping_time=$(echo $best_ping_time | sed 's/...$/.&/')
-    echo "Best ping time was "$best_server_url" @ "$best_ping_time"ms"
-
-    if [ $opt_config_to_output = true ] ; then
-        # Send new config file to stdout
-        echo
-        write_config
+        if [ $opt_config_to_output = true ] ; then
+            # Send new config file to stdout
+            echo
+            write_config
+        fi
     fi
 
     if [ $opt_config_to_file = true ] ; then
@@ -394,15 +424,20 @@ main() {
     fi
 
     if [ $opt_start_openvpn = true ] ; then
-        if ask "Stop any openvpn process and openvpn with new config?" "Y" ; then
-            start_openvpn
+        if [ $opt_force_defaults = true ] || 
+            ask "Stop any openvpn process and openvpn with new config?" "Y" ; then
+            if [ -f "$opt_config_output_file" ]; then
+                start_openvpn
+            else
+                error_exit \
+                    "Openvpn config file does not exist. Use -w option to write."
+            fi
         fi
     fi
 }
 
 # -----------------------------------------------------------------------------
 # Initialize variables and start the script
-
 
 if [[ $1 ]]; then
     # Initialize global variables
@@ -411,10 +446,11 @@ if [[ $1 ]]; then
     temp_file=$(script_path)'/fastIPvanish.tmp'
     openvpn_logfile=$(script_path)'/log/openvpn.log'
     vpn_server_list=$(script_path)'/etc/servers.list'
-    ipVanish_url="https://www.ipvanish.com/software/configs/"
+    ip_vanish_url="https://www.ipvanish.com/software/configs/"
 
     # Initialize the option variables
     opt_update_servers=false
+    opt_force_defaults=false
     opt_filter=''
     opt_list_pings=false
     opt_template_file=$(script_path)'/templates/default.tmpl'
