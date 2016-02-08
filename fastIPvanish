@@ -292,7 +292,8 @@ update_server_list() {
     fi
 
     if [ "$?" -ne 0 ]; then
-        error_exit "FAILED"
+        echo
+        error_exit "Downloading from $ip_vanish_url has failed"
     else
         echo " Done";
         if [ -f "$temp_file" ] ; then
@@ -326,9 +327,10 @@ ping_servers() {
             server_url=$(echo $line | \
                 awk -F'-' '{print $(NF-1) "-" $NF ".ipvanish.com"}')
             # Take: "rtt min/avg/max/mdev = 10.152/10.347/10.521/0.137 ms"
-            $(ping -c 1 -q -s 16 -w 1 -W 1 $server_url 2> /dev/null | \
+            echo $server_url'=' \
+                $(ping -c 1 -q -s 16 -w 1 -W 1 $server_url 2> /dev/null | \
                 awk -F'/' '/avg/{print $5}') \
-                >> "$temp_file" &
+                >> $temp_file &
         fi
     done < "$vpn_server_list"
     wait
