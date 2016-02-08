@@ -13,7 +13,7 @@
 # FOR A PARTICULAR PURPOSE.  See the GNU General Public License at
 # <http://www.gnu.org/licenses/> for more details.
 #
-# Requirements: sed, awk, grep, ping & openvpn
+# Requirements: sed, awk, grep, ping, curl & openvpn
 #
 # -----------------------------------------------------------------------------
 usage() {
@@ -61,7 +61,7 @@ version() {
 # optional arguments for (1) Description and (2) Error code
 error_exit()
 {
-    echo -e "\e[1;31m$(basename $0):\e[33m ${1:-"Unknown Error"}\e[0m" 1>&2
+    echo "$(basename $0): ${1:-"Unknown Error"}" 1>&2
     exit ${2:-1}
 }
 
@@ -232,7 +232,7 @@ parse_arguments() {
 # -----------------------------------------------------------------------------
 # Check if the template exists. If not ...
 # (1) check if the filename exists in the template directory
-# (2) check if it exists in tyhe template directory WITh '.tmpl. extension
+# (2) check if it exists in the template directory WITh '.tmpl. extension
 find_template() {
     if [ -f $opt_template_file ]; then
         return 0
@@ -272,7 +272,7 @@ delete_file() {
 update_server_list() {
     delete_file "$temp_file"
     echo -n "Retrieving the server list from $ip_vanish_url ..."
-    curl "$ip_vanish_url" 2>/dev/null > "$temp_file"
+    wget "$ip_vanish_url" 2>/dev/null > "$temp_file"
     if [ "$?" -ne 0 ]; then
         error_exit "FAILED"
     else
@@ -308,8 +308,6 @@ ping_servers() {
             server_url=$(echo $line | \
                 awk -F'-' '{print $(NF-1) "-" $NF ".ipvanish.com"}')
             # Take: "rtt min/avg/max/mdev = 10.152/10.347/10.521/0.137 ms"
-            # Give: "some.server.com=10.347"
-            echo $server_url'=' \
                 $(ping -c 1 -q -s 16 -w 1 -W 1 $server_url 2> /dev/null | \
                 awk -F'/' '/avg/{print $5}') \
                 >> "$temp_file" &
@@ -373,7 +371,7 @@ start_openvpn() {
     prepare_openvpn_logfile
     openvpn "$opt_config_output_file" >> "$openvpn_logfile" &
 
-    # Monitor openvpn's log file waiting for messages indicating success ot failure
+    # Monitor openvpn's log file waiting for messages indicating success or failure
     result=''
     while [ ! $result ]; do
         sleep 1; echo -n "."
