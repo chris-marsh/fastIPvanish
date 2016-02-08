@@ -272,6 +272,7 @@ command_exists() {
         return 1
     fi
 }
+
 # -----------------------------------------------------------------------------
 # Grab the VPN server list directly from IP Vanish.
 # The html page returned is a file list. Fortunately the file list contains enough
@@ -327,6 +328,7 @@ ping_servers() {
             server_url=$(echo $line | \
                 awk -F'-' '{print $(NF-1) "-" $NF ".ipvanish.com"}')
             # Take: "rtt min/avg/max/mdev = 10.152/10.347/10.521/0.137 ms"
+            # Give: "some.server.com=10.347"
             echo $server_url'=' \
                 $(ping -c 1 -q -s 16 -w 1 -W 1 $server_url 2> /dev/null | \
                 awk -F'/' '/avg/{print $5}') \
@@ -464,7 +466,7 @@ if [[ $1 ]]; then
     temp_file=$(script_path)'/fastIPvanish.tmp'
     openvpn_logfile=$(script_path)'/log/openvpn.log'
     vpn_server_list=$(script_path)'/etc/servers.list'
-    ip_vanish_url="https://www.ipvanish.com/software/configs/"
+    ip_vanish_url="http://www.ipvanish.com/software/configs/"
 
     # Initialize the option variables
     opt_update_servers=false
