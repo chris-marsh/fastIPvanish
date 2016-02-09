@@ -41,7 +41,7 @@ EXAMPLE 2
     Starting server pings ... waiting ...
     Best ping time was sea-a14.ipvanish.com @ 149.537ms
 
-    Saving config file: /home/chris/projects/fastIPvanish/config.ovpn
+    Saving config file: /home/user/fastIPvanish/config.ovpn
 
 EXAMPLE 3
 
