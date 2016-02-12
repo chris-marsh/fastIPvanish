@@ -43,7 +43,7 @@ usage() {
     echo '    fastIPvanish -s US'
     echo '    fastIPvanish -wo New-York'
     echo '    fastIPvanish -w Amsterdam'
-    exit 1
+    exit ${1:-0}
 }
 
 # -----------------------------------------------------------------------------
@@ -61,8 +61,14 @@ version() {
 # optional arguments for (1) Description and (2) Error code
 error_exit()
 {
-    echo -e "$(basename $0): ${1:-"Unknown Error"}" 1>&2
+    warning "$1"
     exit ${2:-1}
+}
+
+# -----------------------------------------------------------------------------
+warning()
+{
+    echo -e "$(basename $0): ${1:-"Unknown Error"}" 1>&2
 }
 
 # -----------------------------------------------------------------------------
@@ -89,6 +95,43 @@ ask() {
 # usage: thePath=$(script_path)
 script_path() {
     echo $(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)
+}
+
+# -----------------------------------------------------------------------------
+command_exists() {
+    if command -v $1 >/dev/null 2>&1; then
+        # command found
+        return 0
+    else
+        # command not available
+        return 1
+    fi
+}
+
+# -----------------------------------------------------------------------------
+# Create a filename for using as a temporary file
+# Base dir preference is;
+#   1 ... ~/tmp
+#   2 ... /tmp
+#   3 ... ./[script_dir]
+# filename has the form script name.pid_no.radnom_no.tmp
+make_temp() {
+    local temp_dir=""
+    if [ -d "$HOME/tmp" ]; then
+        temp_dir="$HOME/tmp"
+    elif [ -d "/tmp" ]; then
+            temp_dir="/tmp"
+    else
+        temp_dir=$(script_path)
+    fi
+    echo "$temp_dir/$(basename $0).$$.$RANDOM.tmp"
+}
+
+# -----------------------------------------------------------------------------
+cleanup_temp() {
+    if [ -f "$temp_file" ]; then
+        rm -f "$temp_file"
+    fi
 }
 
 # -----------------------------------------------------------------------------
@@ -222,11 +265,21 @@ parse_arguments() {
         error_exit 'Root privileges are required for -o to start/stop openvpn.'
     fi
 
-    find_template
     # Does the template file exist?
-    if [ ! -f $opt_template_file ]; then
-        error_exit "Template does not exist! ... $opt_template_file"
+    if [ -n "$opt_template_file" ]; then
+        find_template
+        if [ ! -f "$opt_template_file" ]; then
+            error_exit "Template does not exist! ... $opt_template_file"
+        fi
     fi
+
+    # Are options being used that require a server match?
+    if [ "$opt_list_pings" = true ] ||
+        [ "$opt_config_to_output" = true ] ||
+        [ "$opt_config_to_file" = true ] && [ -z "$opt_filter" ]; then
+    warning "The option(s) used require a search filter."
+    error_exit "Try '--help' for more information."
+fi
 }
 
 # -----------------------------------------------------------------------------
@@ -234,13 +287,13 @@ parse_arguments() {
 # (1) check if the filename exists in the template directory
 # (2) check if it exists in the template directory WITh '.tmpl. extension
 find_template() {
-    if [ -f $opt_template_file ]; then
+    if [ -f "$opt_template_file" ]; then
         return 0
-    elif [ -f $(script_path)"/templates/$opt_template_file" ]; then
-        opt_template_file=$(script_path)"/templates/$opt_template_file"
+    elif [ -f "$(script_path)/templates/$opt_template_file" ]; then
+        opt_template_file="$(script_path)/templates/$opt_template_file"
         return 0
-    elif [ -f $(script_path)"/templates/$opt_template_file.tmpl" ]; then
-        opt_template_file=$(script_path)"/templates/$opt_template_file.tmpl"
+    elif [ -f "$(script_path)/templates/$opt_template_file.tmpl" ]; then
+        opt_template_file="$(script_path)/templates/$opt_template_file.tmpl"
         return 0
     fi
     return 1
@@ -255,25 +308,6 @@ line_break_if() {
 }
 
 # -----------------------------------------------------------------------------
-# Delete file if it exists
-delete_file() {
-    if [ -f "$1" ]; then
-        rm "$1" >/dev/null 2>/dev/null
-    fi
-}
-
-# -----------------------------------------------------------------------------
-command_exists() {
-    if command -v $1 >/dev/null 2>&1; then
-        # command found
-        return 0
-    else
-        # command not available
-        return 1
-    fi
-}
-
-# -----------------------------------------------------------------------------
 # Grab the VPN server list directly from IP Vanish.
 # The html page returned is a file list. Fortunately the file list contains enough
 # info to identify a Geo location and a unique url. The VPN servers will be stored
@@ -281,15 +315,15 @@ command_exists() {
 # where CY is a two letter country code, followed by a city. The following two
 # sections identify the server. eg, xyz.c01.ipvanish.com
 update_server_list() {
-    delete_file "$temp_file"
     echo -n "Retrieving the server list from $ip_vanish_url ..."
 
+    cleanup_temp
     if command_exists curl; then
         curl "$ip_vanish_url" -o "$temp_file" 2>/dev/null
     elif command_exists wget; then
         wget "$ip_vanish_url" -O "$temp_file" 2>/dev/null
     else
-        error_exit "Unable to download servers. Either 'curl' or 'wget' are required."
+        error_exit "Unable to download servers. 'curl' or 'wget' are required."
     fi
 
     if [ "$?" -ne 0 ]; then
@@ -299,7 +333,7 @@ update_server_list() {
         echo " Done";
         if [ -f "$temp_file" ] ; then
             echo -n "Writing new server list ..."
-            delete_file $vpn_server_list
+            rm -rf "$vpn_server_list"
             # Read and parse results from the temp file
             while IFS='' read -r line || [[ -n "$line" ]] ; do
                 awk -F'"' '/ipvanish-/{print substr($6, 10, length($6)-14)}' $list \
@@ -307,7 +341,6 @@ update_server_list() {
             done < "$temp_file"
             echo " Done";
         fi
-        delete_file "$temp_file"
     fi
 }
 
@@ -320,7 +353,7 @@ ping_servers() {
     local server_url=''
     local ping_time=''
 
-    delete_file "$temp_file"
+    cleanup_temp
     echo 'Starting server pings ... waiting ...'
     while IFS='' read -r line || [[ -n "$line" ]] ; do
         if ! [ "${line/$opt_filter}" = "$line" ] ; then
@@ -346,7 +379,7 @@ ping_servers() {
             time_str=$(echo $line | awk -F'=' '{print $2}')
 
             # Remove all non-numeric characters, eg decimal point and 'ms'
-            ping_time=$(echo $time_str | sed s/[^0-9]//g)
+            ping_time=${time_str//[^0-9]/}
 
             case $ping_time in                                                                           
                 ''|*[!0-9]*)                                                                    
@@ -371,7 +404,6 @@ ping_servers() {
         done < "$temp_file"
         line_break_if  "$opt_list_pings"
     fi
-    delete_file "$temp_file"
 }
 
 # -----------------------------------------------------------------------------
@@ -460,14 +492,6 @@ main() {
 # Initialize variables and start the script
 
 if [[ $1 ]]; then
-    # Initialize global variables
-    best_ping_time="999999"
-    best_server_url=""
-    temp_file=$(script_path)'/fastIPvanish.tmp'
-    openvpn_logfile=$(script_path)'/log/openvpn.log'
-    vpn_server_list=$(script_path)'/etc/servers.list'
-    ip_vanish_url="http://www.ipvanish.com/software/configs/"
-
     # Initialize the option variables
     opt_update_servers=false
     opt_force_defaults=false
@@ -479,8 +503,18 @@ if [[ $1 ]]; then
     opt_config_to_output=false
     opt_start_openvpn=false
 
+    # Initialize global variables
+    best_ping_time="999999"
+    best_server_url=""
+    openvpn_logfile=$(script_path)'/log/openvpn.log'
+    vpn_server_list=$(script_path)'/etc/servers.list'
+    ip_vanish_url="http://www.ipvanish.com/software/configs/"
+
+    temp_file=$(make_temp)
+    trap cleanup_temp EXIT INT TERM HUP
+
     main "$@"
 else
     # At least one argument is required
-    usage
+    usage 1
 fi
