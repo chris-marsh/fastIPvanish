@@ -143,6 +143,10 @@ write_config() {
     local login_conf=$(script_path)'/etc/login.conf'
     local cert_file=$(script_path)'/etc/ca.ipvanish.com.crt'
 
+    if [ $OS = "Windows_NT" ]; then
+        login_conf=$(cygpath -m "$login_conf")
+        cert_file=$(cygpath -m "$cert_file")
+    fi
     sed -e "s|SERVER_HERE|$best_server_url|g" \
         -e "s|LOGIN_HERE|$login_conf|g" \
         -e "s|CERT_HERE|$cert_file|g" "$opt_template_file"
@@ -362,10 +366,17 @@ ping_servers() {
                 awk -F'-' '{print $(NF-1) "-" $NF ".ipvanish.com"}')
             # Take: "rtt min/avg/max/mdev = 10.152/10.347/10.521/0.137 ms"
             # Give: "some.server.com=10.347"
-            echo $server_url'=' \
-                $(ping -c 1 -q -s 16 -w 1 -W 1 $server_url 2> /dev/null | \
-                awk -F'/' '/avg/{print $5}') \
-                >> $temp_file &
+	    if [ "$OS" = "Windows_NT" ] ; then
+                echo $server_url'=' \
+	            $(ping -n 1 -l 16 -w 1000 $server_url 2> /dev/null | \
+		    awk -F'=' '/Average/{print $4}') \
+		    >> $temp_file &
+	    else
+                echo $server_url'=' \
+                    $(ping -c 1 -q -s 16 -w 1 -W 1 $server_url 2> /dev/null | \
+                    awk -F'/' '/avg/{print $5}') \
+                    >> $temp_file &
+            fi
         fi
     done < "$vpn_server_list"
     wait
