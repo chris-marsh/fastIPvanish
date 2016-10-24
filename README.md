@@ -80,7 +80,7 @@ EXAMPLE 3
     keysize 256
     tls-cipher TLS-DHE-RSA-WITH-AES-256-CBC-SHA
 
-EXAMPLE 3
+EXAMPLE 4
 
     $ ./fastIPvanish New-York -swot ./templates/openelec-udp1194.tmpl
     Starting server pings ... waiting ...
