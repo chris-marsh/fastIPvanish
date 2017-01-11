@@ -143,7 +143,7 @@ write_config() {
     local login_conf=$(script_path)'/etc/login.conf'
     local cert_file=$(script_path)'/etc/ca.ipvanish.com.crt'
 
-    if [ "$OS" = "Windows_NT" ]; then
+    if [ "$OS" = "Windows_NT" ] && command_exists "cygpath"; then
         login_conf=$(cygpath -m "$login_conf")
         cert_file=$(cygpath -m "$cert_file")
     fi
@@ -322,9 +322,9 @@ update_server_list() {
     echo -n "Retrieving the server list from $ip_vanish_url ..."
 
     cleanup_temp
-    if command_exists curl; then
+    if command_exists "curl"; then
         curl "$ip_vanish_url" -o "$temp_file" 2>/dev/null
-    elif command_exists wget; then
+    elif command_exists "wget"; then
         wget "$ip_vanish_url" -O "$temp_file" 2>/dev/null
     else
         error_exit "Unable to download servers. 'curl' or 'wget' are required."
