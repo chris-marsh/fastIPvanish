@@ -2,4 +2,8 @@
 #
 # Use to confirm your IP before and after starting openvpn
 #
-curl http://icanhazip.com
+echo -n "       External IP: "
+curl -s http://icanhazip.com
+echo -n "Reverse DNS record: "
+curl -s http://icanhazptr.com
+
