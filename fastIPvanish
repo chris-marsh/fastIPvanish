@@ -120,7 +120,7 @@ make_temp() {
     if [ -d "$HOME/tmp" ]; then
         temp_dir="$HOME/tmp"
     elif [ -d "/tmp" ]; then
-            temp_dir="/tmp"
+        temp_dir="/tmp"
     else
         temp_dir=$(script_path)
     fi
@@ -263,10 +263,17 @@ parse_arguments() {
 
     # "Kill early" argument checks ....
 
-    # If starting openvpn then root privileges are needed
-    # NOTE: $EUID is not available on busybox/openelec
-    if [ "$opt_start_openvpn" = true ] && [ "$(id -u)" != "0" ] ; then
-        error_exit 'Root privileges are required for -o to start/stop openvpn.'
+    # If starting openvpn ...
+    if [ "$opt_start_openvpn" = true ] ; then
+        # Do we have root privileges?
+        # NOTE: $EUID is not available on busybox/openelec
+        if [ "$(id -u)" != "0" ] ; then
+            error_exit 'Root privileges are required for -o to start/stop openvpn.'
+        fi
+        # Is openvpn installed?
+        if ! command_exists "openvpnx" ; then
+            error_exit "openvpn does not appear to be installed?"
+        fi
     fi
 
     # Does the template file exist?
@@ -281,9 +288,9 @@ parse_arguments() {
     if [ "$opt_list_pings" = true ] ||
         [ "$opt_config_to_output" = true ] ||
         [ "$opt_config_to_file" = true ] && [ -z "$opt_filter" ]; then
-    warning "The option(s) used require a search filter."
-    error_exit "Try '--help' for more information."
-fi
+        warning "The option(s) used require a search filter."
+        error_exit "Try '--help' for more information."
+    fi
 }
 
 # -----------------------------------------------------------------------------
@@ -366,12 +373,12 @@ ping_servers() {
                 awk -F'-' '{print $(NF-1) "-" $NF ".ipvanish.com"}')
             # Take: "rtt min/avg/max/mdev = 10.152/10.347/10.521/0.137 ms"
             # Give: "some.server.com=10.347"
-	    if [ "$OS" = "Windows_NT" ] ; then
+            if [ "$OS" = "Windows_NT" ] ; then
                 echo $server_url'=' \
-	            $(ping -n 1 -l 16 -w 1000 $server_url 2> /dev/null | \
-		    awk -F'=' '/Average/{print $4}') \
-		    >> $temp_file &
-	    else
+                    $(ping -n 1 -l 16 -w 1000 $server_url 2> /dev/null | \
+                    awk -F'=' '/Average/{print $4}') \
+                    >> $temp_file &
+            else
                 echo $server_url'=' \
                     $(ping -c 1 -q -s 16 -w 1 -W 1 $server_url 2> /dev/null | \
                     awk -F'/' '/avg/{print $5}') \
@@ -523,7 +530,7 @@ if [[ $1 ]]; then
 
     temp_file=$(make_temp)
     trap cleanup_temp EXIT INT TERM HUP
-
+    trap 'exit 0' INT
     main "$@"
 else
     # At least one argument is required
