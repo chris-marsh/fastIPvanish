@@ -271,7 +271,7 @@ parse_arguments() {
             error_exit 'Root privileges are required for -o to start/stop openvpn.'
         fi
         # Is openvpn installed?
-        if ! command_exists "openvpnx" ; then
+        if ! command_exists "openvpn" ; then
             error_exit "openvpn does not appear to be installed?"
         fi
     fi
