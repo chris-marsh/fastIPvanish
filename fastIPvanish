@@ -347,7 +347,7 @@ update_server_list() {
             rm -rf "$vpn_server_list"
             # Read and parse results from the temp file
             while IFS='' read -r line || [[ -n "$line" ]] ; do
-                awk -F'"' '/ipvanish-/{print substr($2, 10, length($2)-14)}' $list \
+                awk -F'>' '/ipvanish-/{print substr($2, 11, length($2)-16)}' $list \
                     >> "$vpn_server_list"
             done < "$temp_file"
             echo " Done";
