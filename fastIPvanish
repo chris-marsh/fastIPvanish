@@ -18,7 +18,7 @@
 # -----------------------------------------------------------------------------
 usage() {
     echo 'USAGE'
-    echo '    fastIPvanish [-u] [-o] [-f] [-h] [-v]'
+    echo '    fastIPvanish [-u] [-o] [-f] [-h] [-v] [-k]'
     echo '                 [ [-l] [-s] [-w] [-c file] [-t file] filter ]'
     echo
     echo 'DESCRIPTION'
@@ -37,6 +37,7 @@ usage() {
     echo '    -t, --template-file   - specify an input template file'
     echo '    -h, --help            - display this help'
     echo '    -v, --version         - output version information'
+    echo '    -k, --kill            - stop openvpn'
     echo
     echo 'EXAMPLES'
     echo '    fastIPvanish -wo -s London'
@@ -184,7 +185,7 @@ prepare_openvpn_logfile() {
 
 # -----------------------------------------------------------------------------
 # Takes an argument list and expand any group short arguments into seperate
-# options. 
+# options.
 # Usage:  eval "set -- $(split_opts "$@")"
 #         eval "set -- $(split_opts "-lotr -file /some/file.txt)"
 # The first example passes the cli argument list which returns a split version.
@@ -243,6 +244,10 @@ parse_arguments() {
                 ;;
             '-t'|'--template-file')
                 opt_template_file=$2
+                shift
+                ;;
+            '-k'|'--kill')
+                opt_kill_openvpn=true
                 shift
                 ;;
             '-h'|'--help')
@@ -399,14 +404,14 @@ ping_servers() {
             # Remove all non-numeric characters, eg decimal point and 'ms'
             ping_time=${time_str//[^0-9]/}
 
-            case $ping_time in                                                                           
-                ''|*[!0-9]*)                                                                    
+            case $ping_time in
+                ''|*[!0-9]*)
                     # ping_time is NOT a valid number
-                    if [ "$opt_list_pings" = true ] ; then 
+                    if [ "$opt_list_pings" = true ] ; then
                         # Option '-l' is set ... list error result
                         echo "$server_url : Error"
                     fi
-                    ;;                                                         
+                    ;;
                 *)
                     # ping_time is a valid numeric.
                     if [ "$opt_list_pings" = true ] ; then
@@ -414,11 +419,11 @@ ping_servers() {
                         echo "$server_url : $time_str"
                     fi
                     # If time is less than previous pings, store the url & time
-                    if [ "$ping_time" -lt "$best_ping_time" ] ; then                                   
-                        best_server_url=$server_url                                      
-                        best_ping_time=$ping_time                                                  
-                    fi ;;                                                                    
-            esac         
+                    if [ "$ping_time" -lt "$best_ping_time" ] ; then
+                        best_server_url=$server_url
+                        best_ping_time=$ping_time
+                    fi ;;
+            esac
         done < "$temp_file"
         line_break_if  "$opt_list_pings"
     fi
@@ -426,17 +431,8 @@ ping_servers() {
 
 # -----------------------------------------------------------------------------
 start_openvpn() {
-    # Check if openvpn is already running and stop it if neccesary
-    openvpn_pid=$(pidof openvpn)
-    if [ $openvpn_pid ] ; then
-        echo -n "Stopping existing openvpn process ..."
-        kill $openvpn_pid
-        while kill -0 "$openvpn_pid" 2> /dev/null; do
-            sleep 1
-            echo -n "."
-        done
-        echo " Done"
-    fi
+    # stop openvpn
+    stop_openvpn
 
     # start openvpn as a background process with output going to a log file
     echo -n "Starting openvpn ..."
@@ -460,6 +456,21 @@ start_openvpn() {
 }
 
 # -----------------------------------------------------------------------------
+stop_openvpn() {
+    # Check if openvpn is already running and stop it if neccesary
+    openvpn_pid=$(pidof openvpn)
+    if [ $openvpn_pid ] ; then
+        echo -n "Stopping existing openvpn process ..."
+        sudo kill $openvpn_pid
+        while kill -0 "$openvpn_pid" 2> /dev/null; do
+            sleep 1
+            echo -n "."
+        done
+        echo " Done"
+    fi
+}
+
+# -----------------------------------------------------------------------------
 # Entry point to the main script
 main() {
     parse_arguments "$@"
@@ -470,6 +481,10 @@ main() {
 
     if [ "$opt_update_servers" = true ]; then
         update_server_list
+    fi
+
+    if [ "$opt_kill_openvpn" = true ]; then
+        stop_openvpn
     fi
 
     if [ -n "$opt_filter" ]; then
@@ -494,7 +509,7 @@ main() {
     fi
 
     if [ $opt_start_openvpn = true ] ; then
-        if [ $opt_force_defaults = true ] || 
+        if [ $opt_force_defaults = true ] ||
             ask "Stop any openvpn process and openvpn with new config?" "Y" ; then
             if [ -f "$opt_config_output_file" ]; then
                 start_openvpn

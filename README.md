@@ -1,13 +1,13 @@
-#fastIPvanish
+# fastIPvanish
 
 USAGE
 
-    fastIPvanish [-u] [-o] [-f] [-h] [-v]
+    fastIPvanish [-u] [-o] [-f] [-h] [-v] [-k]
                  [ [-l] [-s] [-w] [-c file] [-t file] filter ]
 
 DESCRIPTION
 
-    Automatically find and connect to the fastest responding VPN server. 
+    Automatically find and connect to the fastest responding VPN server.
 
     fastIPvanish will ping the VPN servers of IPVanish (https://www.ipvanish.com),
     returning the times and show the fastest responding server. Optionally, a
@@ -25,19 +25,20 @@ OPTIONS
     -t, --template-file   - specify an input template file
     -h, --help            - display help information
     -c, --version         - output version information
+    -k, --kill            - stop openvpn
 
 EXAMPLE 1
 
     $ ./fastIPvanish ZA
     Starting server pings ... waiting ...
     Best ping time was jnb-c02.ipvanish.com @ 195.959ms
-    
+
 EXAMPLE 2
 
     $ ./fastIPvanish -wu Seattle
     Retrieving the server list from https://www.ipvanish.com/software/configs/ ... Done
     Writing new server list ... Done
-    
+
     Starting server pings ... waiting ...
     Best ping time was sea-a14.ipvanish.com @ 149.537ms
 
@@ -111,18 +112,18 @@ EXAMPLE 4
     keysize 256
     tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA
 
-    Stop any openvpn process and openvpn with new config? [Y/n] 
+    Stop any openvpn process and openvpn with new config? [Y/n]
     Stopping existing openvpn process ........ Done
     Starting openvpn .......Success
 
-##Installation
+## Installation
 
-###Method 1 - Downloading with git
+### Method 1 - Downloading with git
 
     $ git clone https://github.com/chris-marsh/fastIPvanish.git
     $ cd fastIPvanish
 
-###Method 2 - Download the zip archive
+### Method 2 - Download the zip archive
 
     Download the archive from https://github.com/chris-marsh/fastIPvanish/archive/master.zip
 
@@ -131,7 +132,7 @@ EXAMPLE 4
     $ mv ./fastIPvanish-master ./fastIPvanish
     $ cd ./fastIPvanish
 
-###Configure the login with your IPVanish username and password
+### Configure the login with your IPVanish username and password
 
     $ cp ./etc/login.conf.example ./etc/login.conf
 
